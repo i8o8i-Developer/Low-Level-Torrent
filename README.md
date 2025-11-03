@@ -8,7 +8,6 @@
  ██████╔╝███████║   ██║          ██║   ╚██████╔╝██║  ██║██║  ██║███████╗██║ ╚████║   ██║
  ╚═════╝ ╚══════╝   ╚═╝          ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝
 ```
-**DST Torrent: Secure, Decentralized, Production-Grade P2P File Sharing For The Modern World**
 
 ## Overview
 

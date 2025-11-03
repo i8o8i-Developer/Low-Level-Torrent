@@ -175,10 +175,6 @@ Thumbs.db
 *.swo
 *~
 
-# Blockchain Data
-blockchain/
-Blockchain/
-
 # Configuration Files (May Contain Secrets)
 config/local_config.py
 config/secrets.py
