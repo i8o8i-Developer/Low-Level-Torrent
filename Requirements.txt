@@ -1,0 +1,48 @@
+# Core Dependencies For Production-Grade Torrent System
+Flask
+Flask-CORS
+Flask-SQLAlchemy
+SQLAlchemy
+
+# Cryptography Libraries
+cryptography
+pycryptodome
+# liboqs-python==0.14.1  # Quantum-Resistant Cryptography (Optional)
+
+# Blockchain Support (Custom Implementation Used)
+# web3==6.11.3
+# py-evm==0.8.0b1
+
+# Steganography
+stegano
+Pillow
+
+# Network And Protocol
+aiohttp
+uvicorn
+websockets
+
+# Database
+alembic
+
+# Zero-Knowledge Proofs
+# py-ecc==6.0.0  # May cause build issues
+
+# Utilities
+python-dotenv
+pydantic
+bencodepy
+requests
+
+# Testing And Development
+pytest
+pytest-asyncio
+black
+flake8
+
+# Logging And Monitoring
+loguru
+psutil  # System Resource Monitoring
+
+# Security
+pyOpenSSL
