@@ -135,11 +135,6 @@ dmypy.json
 *.p12
 *.pfx
 
-# Log Files
-*.log
-logs/
-Logs/
-
 # Temporary Files
 *.tmp
 *.temp
