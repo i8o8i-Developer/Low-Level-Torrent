@@ -41,7 +41,7 @@ class BitTorrent_Protocol:
 
     # Protocol Constants
     PROTOCOL_STRING = b'BitTorrent protocol'
-    HANDSHAKE_LENGTH = 68
+    HANDSHAKE_LENGTH = 80  # 1 + 19 + 8 + 32 (SHA-256) + 20 = 80
     BLOCK_SIZE = 16384  # 16KB Blocks
 
     # Message IDs
@@ -114,8 +114,9 @@ class BitTorrent_Protocol:
         if pstr != self.PROTOCOL_STRING:
             return None
 
-        info_hash = data[1+pstrlen+8:1+pstrlen+8+20]
-        peer_id = data[1+pstrlen+8+20:1+pstrlen+8+20+20]
+        # SHA-256 info hash is 32 bytes
+        info_hash = data[1+pstrlen+8:1+pstrlen+8+32]
+        peer_id = data[1+pstrlen+8+32:1+pstrlen+8+32+20]
 
         return info_hash, peer_id
 
@@ -196,14 +197,14 @@ class BitTorrent_Protocol:
     async def perform_handshake(self, peer_conn: Peer_Connection) -> bool:
         """Perform BitTorrent Handshake With Peer"""
         try:
-            # Send HandShake
+            # Send HandShake (No Length Prefix)
             handshake = self.create_handshake()
-            success = await peer_conn.Send_Message(handshake)
+            success = await peer_conn.Send_Handshake(handshake)
             if not success:
                 return False
 
-            # Receive HandShake
-            response = await peer_conn.Receive_Message()
+            # Receive HandShake (No Length Prefix)
+            response = await peer_conn.Receive_Handshake()
             if not response or len(response) != self.HANDSHAKE_LENGTH:
                 return False
 
@@ -216,6 +217,8 @@ class BitTorrent_Protocol:
             # Verify Info Hash Matches
             if peer_info_hash != self.info_hash:
                 logger.warning(f"Info Hash Mismatch From Peer {peer_conn.Peer_Id}")
+                logger.debug(f"Expected: {self.info_hash.hex()}")
+                logger.debug(f"Received: {peer_info_hash.hex()}")
                 return False
 
             peer_id_str = peer_peer_id.decode('latin-1')
@@ -538,6 +541,7 @@ class BitTorrent_Protocol:
     async def _write_piece_to_files(self, piece_index: int):
         """Write Completed Piece Data To Appropriate Files"""
         if piece_index not in self.piece_buffers:
+            logger.warning(f"Piece {piece_index} Not In Buffers!")
             return
 
         # Assemble Piece Data
@@ -547,6 +551,10 @@ class BitTorrent_Protocol:
         for offset in sorted(piece_buffer.keys()):
             piece_data += piece_buffer[offset]
 
+        logger.info(f"Writing Piece {piece_index}, {len(piece_data)} Bytes To Files")
+        logger.info(f"Download Directory: {self.download_dir}")
+        logger.info(f"Files In Metadata: {len(self.metadata.Files)}")
+
         # Calculate Piece Offset In Torrent
         piece_offset = piece_index * self.piece_size
         piece_size = len(piece_data)
@@ -555,7 +563,16 @@ class BitTorrent_Protocol:
         current_offset = 0
 
         for file_info in self.metadata.Files:
-            file_path = self.download_dir / file_info.Path if self.download_dir else file_info.Path
+            logger.info(f"Processing File: {file_info.Path}, Length: {file_info.Length}")
+            
+            if self.download_dir:
+                file_path = self.download_dir / file_info.Path
+            else:
+                from pathlib import Path
+                file_path = Path(file_info.Path)
+            
+            logger.info(f"Full File Path: {file_path}")
+            
             file_start = current_offset
             file_end = current_offset + file_info.Length
 
@@ -582,7 +599,7 @@ class BitTorrent_Protocol:
                         f.seek(file_write_start)
                         f.write(piece_data[piece_data_start:piece_data_end])
 
-                    logger.debug(f"Wrote {piece_data_end - piece_data_start} bytes to {file_path}")
+                    logger.info(f"✅ Wrote {piece_data_end - piece_data_start} Bytes To {file_path}")
 
             current_offset += file_info.Length
 
@@ -662,8 +679,8 @@ class BitTorrent_Protocol:
 
             # Verify Piece Data
             if len(piece_data) == piece_size:
-                # Calculate SHA-1 Hash
-                piece_hash = hashlib.sha1(piece_data).digest()
+                # Calculate SHA-256 Hash
+                piece_hash = hashlib.sha256(piece_data).digest()
                 expected_hash = bytes.fromhex(self.metadata.Piece_Hashes[piece_index])
 
                 return piece_hash == expected_hash
@@ -703,12 +720,31 @@ class BitTorrent_Protocol:
         try:
             # Create Peer Connection Wrapper
             class IncomingPeerConnection:
-                def __init__(self, reader, writer, peer_id):
+                def __init__(self, reader, writer, peer_id, peer_addr):
                     self.reader = reader
                     self.writer = writer
                     self.Peer_Id = peer_id
-                    self.IP = peer_addr[0]
-                    self.Port = peer_addr[1]
+                    self.IP = peer_addr[0]  # Extract IP address
+                    self.Port = peer_addr[1]  # Extract port
+                async def Send_Handshake(self, handshake: bytes) -> bool:
+                    """Send BitTorrent Handshake (No Length Prefix)"""
+                    try:
+                        self.writer.write(handshake)
+                        await self.writer.drain()
+                        return True
+                    except Exception as e:
+                        logger.debug(f"Error Sending Handshake To {self.Peer_Id}: {e}")
+                        return False
+
+                async def Receive_Handshake(self) -> Optional[bytes]:
+                    """Receive BitTorrent Handshake (No Length Prefix)"""
+                    try:
+                        # Receive Exactly 80 Bytes For Handshake (SHA-256 version)
+                        handshake = await self.reader.readexactly(80)
+                        return handshake
+                    except Exception as e:
+                        logger.debug(f"Error Receiving Handshake From {self.Peer_Id}: {e}")
+                        return None
 
                 async def Send_Message(self, data: bytes) -> bool:
                     try:
@@ -738,7 +774,7 @@ class BitTorrent_Protocol:
                 def Close(self):
                     self.writer.close()
 
-            peer_conn = IncomingPeerConnection(reader, writer, peer_id)
+            peer_conn = IncomingPeerConnection(reader, writer, peer_id, peer_addr)
 
             # Perform HandShake
             if await self.perform_handshake(peer_conn):

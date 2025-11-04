@@ -211,6 +211,65 @@ class Peer_Connection:
             self.Connected = False
             return False
     
+    async def Send_Handshake(self, handshake: bytes) -> bool:
+        """
+        Send BitTorrent Handshake (No Length Prefix)
+        
+        Args:
+            handshake: Handshake Data (68 bytes)
+            
+        Returns:
+            Success Status
+        """
+        try:
+            if not self.Connected or not self.Socket:
+                logger.warning("Cannot Send - Not Connected")
+                return False
+            
+            # Send Raw Handshake (No Length Prefix)
+            await asyncio.get_event_loop().run_in_executor(
+                None,
+                self.Socket.sendall,
+                handshake
+            )
+            
+            logger.debug(f"Sent Handshake ({len(handshake)} Bytes) To {self.Peer_Id}")
+            return True
+            
+        except Exception as E:
+            logger.error(f"Failed To Send Handshake: {E}")
+            return False
+    
+    async def Receive_Handshake(self) -> Optional[bytes]:
+        """
+        Receive BitTorrent Handshake (No Length Prefix)
+        
+        Returns:
+            Handshake Data (80 bytes) Or None
+        """
+        try:
+            if not self.Connected or not self.Socket:
+                logger.warning("Cannot Receive - Not Connected")
+                return None
+            
+            # Receive Exactly 80 Bytes For Handshake (SHA-256 version)
+            handshake = await asyncio.get_event_loop().run_in_executor(
+                None,
+                self.Socket.recv,
+                80
+            )
+            
+            if len(handshake) != 80:
+                logger.warning(f"Incomplete Handshake Received: {len(handshake)} Bytes")
+                return None
+            
+            logger.debug(f"Received Handshake From {self.Peer_Id}")
+            return handshake
+            
+        except Exception as E:
+            logger.error(f"Failed To Receive Handshake: {E}")
+            return None
+    
     async def Send_Message(self, Message: bytes) -> bool:
         """
         Send Message To Peer

@@ -192,9 +192,12 @@ function Switch_Tab(Tab_ID) {
 
 /**
  * START AUTO-REFRESH TIMER
+ * DISABLED - Only Refresh When User Clicks Refresh Button
  */
 function Start_Auto_Refresh() {
-    // REFRESH EVERY 5 SECONDS
+    // AUTO-REFRESH DISABLED - User must click refresh buttons
+    // Uncomment below to enable auto-refresh every 5 seconds
+    /*
     Refresh_Interval = setInterval(() => {
         Update_Uptime();
         if (Current_Tab === 'Dashboard_Tab') {
@@ -209,6 +212,7 @@ function Start_Auto_Refresh() {
             Refresh_System();
         }
     }, 5000);
+    */
 }
 
 /**
@@ -1150,8 +1154,32 @@ function Update_System_Config(Data) {
     Set_Text_If_Exists('Database_Type', Data.Database || 'SQLITE');
     Set_Text_If_Exists('System_Version', Data.Version || '1.0.0');
     
-    // Load Directory Settings From Local Storage
-    Load_Directory_Settings();
+    // Update Directory Configuration From Server
+    if (Data.Directories) {
+        const Download_Dir_Input = document.getElementById('Download_Directory');
+        const Upload_Dir_Input = document.getElementById('Upload_Directory');
+        const Temp_Dir_Input = document.getElementById('Temp_Directory');
+        const Torrent_Dir_Input = document.getElementById('Torrent_Directory');
+        
+        if (Download_Dir_Input) Download_Dir_Input.value = Data.Directories.Downloads || '';
+        if (Download_Dir_Input) Download_Dir_Input.placeholder = Data.Directories.Downloads || 'Downloads';
+        
+        if (Upload_Dir_Input) Upload_Dir_Input.value = Data.Directories.Uploads || '';
+        if (Upload_Dir_Input) Upload_Dir_Input.placeholder = Data.Directories.Uploads || 'Storage/Uploads';
+        
+        if (Temp_Dir_Input) Temp_Dir_Input.value = Data.Directories.Temp || '';
+        if (Temp_Dir_Input) Temp_Dir_Input.placeholder = Data.Directories.Temp || 'Storage/Temp';
+        
+        if (Torrent_Dir_Input) Torrent_Dir_Input.value = Data.Directories.Torrents || '';
+        if (Torrent_Dir_Input) Torrent_Dir_Input.placeholder = Data.Directories.Torrents || 'Storage/Torrents';
+        
+        // Update download info displays
+        Set_Text_If_Exists('Download_Info_Dir_Display', Data.Directories.Downloads || 'Downloads');
+        Set_Text_If_Exists('Download_Directory_Display', Data.Directories.Downloads || 'Downloads');
+    }
+    
+    // Load Directory Settings From Local Storage (For User Overrides)
+    // Load_Directory_Settings();
 }
 
 /**

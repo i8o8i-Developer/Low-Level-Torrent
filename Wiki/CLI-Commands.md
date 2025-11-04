@@ -15,11 +15,39 @@ DST Torrent Provides A Web-Based User Interface For Enhanced Features Including:
 - **Modal Popups**: Interactive Torrent And Peer Details
 - **Dead Drop System**: Anonymous, Self-Destructing File Sharing
 - **Real-Time Dashboard**: Live Statistics And Activity Monitoring
+- **Auto-Seeding**: Automatic Seeding After File Upload
+- **Localhost Optimization**: Instant Downloads When Files Available Locally
+- **Directory Configuration**: Configurable Storage Paths In Settings
+
+### Directory Structure
+
+When Using The Web Interface:
+- **Storage/Uploads/** - Original Files Uploaded Via Web Interface
+- **Storage/Torrents/** - .dst Torrent Files And File Copies For Seeding
+- **Storage/Temp/** - Temporary Processing Files
+- **Downloads/** - Completed Downloaded Files
 
 To Access The Web UI:
-1. Start The Server: `python Main_Server.py`
+1. Start The Server: `python Main_Server.py` Or `Launch_Frontend.bat` (Windows)
 2. Open Browser To: `http://localhost:5043`
 3. Use The Interface For Advanced Operations
+
+### Web Interface Features
+
+#### Upload Workflow
+1. Click "Upload File" Button
+2. Select File From Your System
+3. File Saved To `Storage/Uploads/[filename]`
+4. Torrent Created In `Storage/Torrents/[hash].dst`
+5. File Copied To `Storage/Torrents/[filename]` For Seeding
+6. Auto-Seeding Starts Automatically In Background
+
+#### Download Workflow
+1. Click On A Torrent In The Dashboard
+2. Click "Download" Button
+3. System Checks `Storage/Torrents/` For Local Copy
+4. If Found: Instant Copy To `Downloads/` Folder
+5. If Not Found: P2P Download From Available Seeders
 
 ## Core Commands
 
@@ -57,6 +85,9 @@ python Main_Client.py create -i /Path/To/Movies -o Movies.dst -t http://tracker.
 
 # Create Encrypted Private Torrent
 python Main_Client.py create -i Secret_Data -o Secret.dst -t http://secure.tracker.com/announce --private --encrypt --comment "Classified Data"
+
+# Create And Save To Storage/Torrents/ (For Auto-Seeding)
+python Main_Client.py create -i MyFile.zip -o Storage/Torrents/MyFile.dst -t http://localhost:5043/announce
 ```
 
 ### Load Torrent
@@ -86,7 +117,7 @@ Private: No
 
 ### Download Torrent
 
-Download Files From A Torrent With Full P2P Support.
+Download Files From A Torrent With Full P2P Support And Localhost Optimization.
 
 ```bash
 python Main_Client.py download \
@@ -99,18 +130,28 @@ python Main_Client.py download \
 
 #### Parameters
 - `--torrent`: Path To .dst Torrent File (Required)
-- `--output, -o`: Download Directory (Required)
+- `--output, -o`: Download Directory (Required, Default: Downloads/)
 - `--max-peers, -m`: Maximum Concurrent Peers (Default: 10)
 - `--port, -p`: Listening Port (Default: Auto)
 - `--seed-after`: Continue Seeding After Download Completes
 
+#### Features
+- **Localhost Optimization**: Automatically Detects If Files Exist In `Storage/Torrents/` And Copies Them Directly For Instant Transfer
+- **P2P Fallback**: If Files Not Found Locally, Downloads Via P2P From Available Seeders
+- **Piece Verification**: Validates All Downloaded Pieces Against Torrent Hashes
+- **Automatic Retry**: Retries Failed Connections With Exponential Backoff
+
 #### Examples
 ```bash
-# Basic Download
+# Basic Download (Uses Downloads/ By Default)
 python Main_Client.py download -t Ubuntu.dst -o Downloads/
 
 # Download With Custom Settings
 python Main_Client.py download -t Movie.dst -o Movies/ --max-peers 20 --port 6881 --seed-after
+
+# Download With Localhost Optimization
+# If File Exists In Storage/Torrents/, It Will Be Copied Instantly
+python Main_Client.py download -t FliqloScr.dst -o Downloads/
 ```
 
 #### Progress Display
@@ -119,6 +160,11 @@ python Main_Client.py download -t Movie.dst -o Movies/ --max-peers 20 --port 688
 📊 Total Size: 3.5 GB
 🧩 Pieces: 14336
 
+Localhost Optimization: Checking Storage/Torrents/ For Local Copy...
+✓ Found Local Copy! Copying Files Instantly...
+✓ Download Complete In 0.5 Seconds!
+
+# Or With P2P:
 Downloading: 45.2% │████████████████████░░░░░░░░░░░░│ 45.2% (1.6 GB/3.5 GB) 2.1 MB/s ETA: 12:34
 ```
 

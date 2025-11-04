@@ -3,11 +3,12 @@ RESTful Tracker API
 Flask-Based HTTP/S Tracker With Authentication And Validation
 """
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from datetime import datetime
+import bencodepy
 from typing import Optional
 from loguru import logger
 from sqlalchemy import text
@@ -74,6 +75,9 @@ class Tracker_API:
         
         # Dead Drop Storage
         self.Dead_Drops = {}  # In-Memory Storage For Dead Drops
+        
+        # Active Downloads Tracking
+        self.Active_Downloads = {}  # {torrent_hash: {process, status, progress, etc}}
         
         # Production Setup
         self._Setup_Production()
@@ -226,6 +230,22 @@ class Tracker_API:
                 if not Info_Hash or not Peer_Id or not Port:
                     return jsonify({'Failure Reason': 'Missing Required Parameters'}), 400
                 
+                # Ensure Torrent Exists
+                Torrent = self.Torrent_Ops.Get_Torrent(Info_Hash)
+                if not Torrent:
+                    from Database.Models import Torrent
+                    Session = self.DB.Get_Session()
+                    Torrent = Torrent(
+                        Info_Hash=Info_Hash,
+                        Name=f"Torrent_{Info_Hash[:8]}",
+                        Total_Size=0,
+                        Piece_Count=0,
+                        Piece_Size=0
+                    )
+                    Session.add(Torrent)
+                    Session.commit()
+                    Session.close()
+                
                 # Add/Update Peer
                 self.Peer_Ops.Add_Or_Update_Peer(
                     Peer_Id=Peer_Id,
@@ -265,31 +285,32 @@ class Tracker_API:
                     Peers_Data = Compact_Peer_List.Encode_Peers(Peer_List)
                     
                     Response = {
-                        'Interval': 1800,
-                        'Complete': Seeders,
-                        'Incomplete': Leechers,
-                        'Peers': Peers_Data.hex()
+                        b'interval': 1800,
+                        b'complete': Seeders,
+                        b'incomplete': Leechers,
+                        b'peers': Peers_Data
                     }
                 else:
                     # Dictionary Peer List
                     Peers_Data = [
                         {
-                            'Peer Id': P.Peer_Id,
-                            'IP': P.IP_Address,
-                            'Port': P.Port
+                            b'peer id': P.Peer_Id.encode(),
+                            b'ip': P.IP_Address.encode(),
+                            b'port': P.Port
                         }
                         for P in Peers
                     ]
                     
                     Response = {
-                        'Interval': 1800,
-                        'Complete': Seeders,
-                        'Incomplete': Leechers,
-                        'Peers': Peers_Data
+                        b'interval': 1800,
+                        b'complete': Seeders,
+                        b'incomplete': Leechers,
+                        b'peers': Peers_Data
                     }
                 
                 logger.info(f"Announce: {Peer_Id[:8]} For {Info_Hash[:8]}")
-                return jsonify(Response)
+                bencoded_response = bencodepy.encode(Response)
+                return bencoded_response
                 
             except Exception as E:
                 logger.error(f"Announce Failed: {E}")
@@ -633,7 +654,6 @@ class Tracker_API:
             """Upload File And Create Torrent"""
             try:
                 from werkzeug.utils import secure_filename
-                import tempfile
                 from Core import Create_Torrent_From_Path
                 from pathlib import Path as PathLib
                 
@@ -661,17 +681,28 @@ class Tracker_API:
                 if not (Torrent_Config.Min_Piece_Size <= Piece_Size <= Torrent_Config.Max_Piece_Size):
                     return jsonify({'message': f'Invalid Piece Size (Must Be Between {Torrent_Config.Min_Piece_Size} And {Torrent_Config.Max_Piece_Size})'}), 400
                 
-                # Save File Temporarily
-                Temp_Dir = tempfile.mkdtemp()
-                Filename = secure_filename(File.filename)
-                File_Path = os.path.join(Temp_Dir, Filename)
-                File.save(File_Path)
+                # Get Project Root Directory
+                Project_Root = PathLib(__file__).parent.parent
                 
-                # Create Torrent
-                Torrent_Path = File_Path + '.dst'
+                # Ensure Storage Directories Exist
+                Uploads_Dir = Project_Root / 'Storage' / 'Uploads'
+                Uploads_Dir.mkdir(parents=True, exist_ok=True)
+                
+                # Save File To Storage/Uploads
+                Filename = secure_filename(File.filename)
+                File_Path = Uploads_Dir / Filename
+                File.save(str(File_Path))
+                
+                logger.info(f"File Uploaded To: {File_Path}")
+                
+                # Create Torrent (Save .dst To Storage/Temp First)
+                Temp_Dir = Project_Root / 'Storage' / 'Temp'
+                Temp_Dir.mkdir(parents=True, exist_ok=True)
+                Torrent_Path = Temp_Dir / f"{Filename}.dst"
+                
                 Create_Torrent_From_Path(
-                    Input_Path=File_Path,
-                    Output_Path=Torrent_Path,
+                    Input_Path=str(File_Path),
+                    Output_Path=str(Torrent_Path),
                     Tracker_URLs=[Tracker_URL],
                     Piece_Size=Piece_Size,
                     Comment=Description
@@ -680,7 +711,7 @@ class Tracker_API:
                 # Calculate Info Hash
                 from Core import DST_File_Handler
                 Handler = DST_File_Handler()
-                Metadata = Handler.Load_Torrent(Torrent_Path)
+                Metadata = Handler.Load_Torrent(str(Torrent_Path))
                 Info_Hash = Metadata.Info_Hash
                 
                 # Check If Torrent Already Exists
@@ -690,10 +721,6 @@ class Tracker_API:
                 
                 if Existing_Torrent:
                     Session.close()
-                    # Cleanup
-                    import shutil
-                    shutil.rmtree(Temp_Dir)
-                    
                     logger.warning(f"Torrent Already Exists: {Info_Hash}")
                     return jsonify({
                         'message': 'Torrent Already Exists',
@@ -723,16 +750,66 @@ class Tracker_API:
                 Session.commit()
                 Session.close()
                 
-                # Save .dst File To Persistent Storage
-                Persistent_Torrent_Path = Storage_Config.Torrents_Directory / f"{Info_Hash}.dst"
+                # Save .dst File To Storage/Torrents
+                Torrents_Dir = Project_Root / 'Storage' / 'Torrents'
+                Torrents_Dir.mkdir(parents=True, exist_ok=True)
+                Persistent_Torrent_Path = Torrents_Dir / f"{Info_Hash}.dst"
+                
                 import shutil
-                shutil.copy2(Torrent_Path, Persistent_Torrent_Path)
-                os.chmod(Persistent_Torrent_Path, Storage_Config.File_Permissions)
+                shutil.copy2(str(Torrent_Path), str(Persistent_Torrent_Path))
                 
                 logger.info(f"Torrent File Saved: {Persistent_Torrent_Path}")
                 
-                # Cleanup Temp Files
-                shutil.rmtree(Temp_Dir)
+                # Start Seeding Automatically
+                def start_auto_seeding():
+                    try:
+                        import sys
+                        python_executable = sys.executable
+                        
+                        # Set Environment For UTF-8 Support
+                        env = os.environ.copy()
+                        env['PYTHONIOENCODING'] = 'utf-8'
+                        
+                        import shutil
+                        Torrent_Dir = Project_Root / 'Storage' / 'Torrents'
+                        Seeding_File_Path = Torrent_Dir / Filename
+                        
+                        if not Seeding_File_Path.exists():
+                            shutil.copy2(str(File_Path), str(Seeding_File_Path))
+                            logger.info(f"Copied File For Seeding: {Seeding_File_Path}")
+                        
+                        cmd = [python_executable, 'Main_Client.py', 'seed', '--torrent', str(Persistent_Torrent_Path)]
+                        logger.info(f"Auto-Starting Seeding: {' '.join(cmd)}")
+                        
+                        process = subprocess.Popen(
+                            cmd,
+                            cwd=str(Project_Root),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            encoding='utf-8',
+                            errors='replace',
+                            env=env
+                        )
+                        
+                        logger.info(f"Automatic Seeding Started For: {Info_Hash}")
+                        
+                        # Update Database - Increment Seeders (in new session)
+                        try:
+                            New_Session = self.DB.Get_Session()
+                            Torrent_To_Update = New_Session.query(Torrent).filter_by(Info_Hash=Info_Hash).first()
+                            if Torrent_To_Update:
+                                Torrent_To_Update.Complete += 1
+                                New_Session.commit()
+                            New_Session.close()
+                        except Exception as db_error:
+                            logger.error(f"Failed to update seeder count: {db_error}")
+                        
+                    except Exception as e:
+                        logger.error(f"Failed To Start Auto-Seeding: {e}")
+                
+                # Start Seeding In Background
+                threading.Thread(target=start_auto_seeding, daemon=True).start()
                 
                 logger.info(f"Torrent Created: {Info_Hash}")
                 
@@ -818,17 +895,32 @@ class Tracker_API:
                 # Start Seeding In Background Thread
                 def start_seeding():
                     try:
+                        # Get Parent Directory (Where Main_Client.py Is Located)
+                        from pathlib import Path
+                        Parent_Dir = Path(__file__).parent.parent
+                        
+                        # Use Same Python Interpreter As Current Process
+                        import sys
+                        python_executable = sys.executable
+                        
                         # Run The Seeding Command
-                        cmd = ['python', 'Main_Client.py', 'seed', Torrent_Path]
+                        cmd = [python_executable, 'Main_Client.py', 'seed', '--torrent', Torrent_Path]
                         logger.info(f"Starting seeding process: {' '.join(cmd)}")
                         
-                        # Start SubProcess
+                        # Set Environment For UTF-8 Support
+                        env = os.environ.copy()
+                        env['PYTHONIOENCODING'] = 'utf-8'
+                        
+                        # Start SubProcess From Parent Directory
                         process = subprocess.Popen(
                             cmd,
-                            cwd=os.path.dirname(__file__),  # Run From Tracker directory
+                            cwd=str(Parent_Dir),  # Run From Parent Directory
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
-                            text=True
+                            text=True,
+                            encoding='utf-8',
+                            errors='replace',
+                            env=env
                         )
                         
                         # Update Database - Increment Seeders
@@ -987,13 +1079,22 @@ class Tracker_API:
         def API_Config():
             """Get System Configuration For Web UI"""
             try:
+                from pathlib import Path as PathLib
+                Project_Root = PathLib(__file__).parent.parent
+                
                 return jsonify({
                     'Host': Server_Config.Host,
                     'Port': Server_Config.Port,
                     'Encryption': 'AES-256-GCM',
                     'Quantum_Resistant': True,
                     'Database': 'SQLITE',
-                    'Version': '1.0.0'
+                    'Version': '1.0.0',
+                    'Directories': {
+                        'Downloads': str(Project_Root / 'Downloads'),
+                        'Uploads': str(Project_Root / 'Storage' / 'Uploads'),
+                        'Temp': str(Project_Root / 'Storage' / 'Temp'),
+                        'Torrents': str(Project_Root / 'Storage' / 'Torrents')
+                    }
                 })
             except Exception as E:
                 logger.error(f"Config Failed: {E}")
@@ -1228,10 +1329,15 @@ class Tracker_API:
                 # Get Download Directory
                 Download_Directory = request.form.get('download_directory', 'Downloads')
                 
+                # Make Download Directory Absolute
+                from pathlib import Path
+                Parent_Dir = Path(__file__).parent.parent
+                if not Path(Download_Directory).is_absolute():
+                    Download_Directory = str(Parent_Dir / Download_Directory)
+                
                 # Save DST File Temporarily
                 import tempfile
                 import os
-                from pathlib import Path
                 
                 Temp_Dir = Path(tempfile.gettempdir()) / 'dst_downloads'
                 Temp_Dir.mkdir(exist_ok=True)
@@ -1239,22 +1345,94 @@ class Tracker_API:
                 Temp_DST_Path = Temp_Dir / DST_File.filename
                 DST_File.save(str(Temp_DST_Path))
                 
+                # Extract Info Hash For Tracking
+                Torrent_Hash = Temp_DST_Path.stem.replace('.dst', '')
+                if Torrent_Hash.endswith('.dst'):
+                    Torrent_Hash = Torrent_Hash[:-4]
+                
                 # Start Download In Background Thread
                 def start_download():
                     try:
+                        # Get Parent Directory (Where Main_Client.py Is Located)
+                        Parent_Dir = Path(__file__).parent.parent
+                        
+                        # Use Same Python Interpreter As Current Process
+                        import sys
+                        python_executable = sys.executable
+                        
                         # Run Download Command
-                        cmd = ['python', 'Main_Client.py', 'download', '--torrent', str(Temp_DST_Path), '--output', Download_Directory]
+                        cmd = [python_executable, 'Main_Client.py', 'download', '--torrent', str(Temp_DST_Path), '--output', Download_Directory]
                         logger.info(f"Starting download: {' '.join(cmd)}")
                         
-                        # Start SubProcess
+                        # Set Environment For UTF-8 Support
                         import subprocess
+                        env = os.environ.copy()
+                        env['PYTHONIOENCODING'] = 'utf-8'
+                        
+                        # Start SubProcess From Parent Directory
                         process = subprocess.Popen(
                             cmd,
-                            cwd=os.path.dirname(__file__),  # Run From Tracker directory
+                            cwd=str(Parent_Dir),  # Run From Parent Directory
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
-                            text=True
+                            text=True,
+                            encoding='utf-8',
+                            errors='replace',
+                            env=env
                         )
+                        
+                        # Track Download
+                        self.Active_Downloads[Torrent_Hash] = {
+                            'process': process,
+                            'filename': DST_File.filename,
+                            'status': 'downloading',
+                            'progress': 0,
+                            'started_at': time.time()
+                        }
+                        
+                        # Monitor Process Output
+                        def monitor_output():
+                            try:
+                                # Log all stdout
+                                for line in process.stdout:
+                                    logger.info(f"Download stdout: {line.strip()}")
+                                    # Update progress if available
+                                    if Torrent_Hash in self.Active_Downloads:
+                                        # Parse progress from output (if available)
+                                        if '%' in line:
+                                            try:
+                                                import re
+                                                match = re.search(r'(\d+)%', line)
+                                                if match:
+                                                    self.Active_Downloads[Torrent_Hash]['progress'] = int(match.group(1))
+                                            except:
+                                                pass
+                                
+                                # Wait for process to complete
+                                return_code = process.wait()
+                                
+                                # Always log stderr
+                                stderr_output = process.stderr.read()
+                                if stderr_output:
+                                    logger.info(f"Download stderr: {stderr_output}")
+                                
+                                if Torrent_Hash in self.Active_Downloads:
+                                    if return_code == 0:
+                                        self.Active_Downloads[Torrent_Hash]['status'] = 'completed'
+                                        self.Active_Downloads[Torrent_Hash]['progress'] = 100
+                                        logger.info(f"Download completed: {DST_File.filename}")
+                                    else:
+                                        self.Active_Downloads[Torrent_Hash]['status'] = 'failed'
+                                        self.Active_Downloads[Torrent_Hash]['error'] = stderr_output
+                                        logger.error(f"Download failed with code {return_code}: {stderr_output}")
+                            except Exception as e:
+                                logger.error(f"Error monitoring download: {e}")
+                                if Torrent_Hash in self.Active_Downloads:
+                                    self.Active_Downloads[Torrent_Hash]['status'] = 'failed'
+                                    self.Active_Downloads[Torrent_Hash]['error'] = str(e)
+                        
+                        # Start monitoring thread
+                        threading.Thread(target=monitor_output, daemon=True).start()
                         
                         # Store Process Info (In Real Implementation, Use A Download Manager)
                         logger.info(f"Download Process Started For: {DST_File.filename}")
@@ -1279,10 +1457,21 @@ class Tracker_API:
         def API_Downloads_Status():
             """Get Download Status"""
             try:
-                # In A Real Implementation, This Would Query Active Downloads
-                # For Now, Return Empty List
+                # Build Downloads List From Active Downloads
+                downloads_list = []
+                
+                for torrent_hash, download_info in list(self.Active_Downloads.items()):
+                    downloads_list.append({
+                        'torrent_hash': torrent_hash,
+                        'filename': download_info.get('filename', 'Unknown'),
+                        'status': download_info.get('status', 'unknown'),
+                        'progress': download_info.get('progress', 0),
+                        'started_at': download_info.get('started_at', 0),
+                        'error': download_info.get('error', None)
+                    })
+                
                 return jsonify({
-                    'downloads': []
+                    'downloads': downloads_list
                 })
                 
             except Exception as E:

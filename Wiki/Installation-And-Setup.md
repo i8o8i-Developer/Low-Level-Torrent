@@ -37,6 +37,9 @@ cd Low-Level-Torrent
 ```bash
 # Install Core Dependencies
 pip install -r Requirements.txt
+
+# Or Use Automated Setup (Windows)
+Setup.bat
 ```
 
 #### Optional Dependencies
@@ -48,7 +51,24 @@ pip install -r Requirements-Dev.txt
 pip install liboqs-python
 ```
 
-### Step 3: Verify Installation
+### Step 3: Directory Structure Setup
+
+The System Automatically Creates Required Directories On First Run:
+
+```
+Storage/
+├── Uploads/         # Original Uploaded Files
+├── Torrents/        # .dst Torrent Files And Seeding Copies
+└── Temp/            # Temporary Processing Files
+
+Downloads/           # Completed Downloaded Files
+Data/                # SQLite Database Files
+Logs/                # Application Log Files
+```
+
+**Note**: All Paths Are Automatically Created With Absolute Path Support For Cross-Platform Compatibility.
+
+### Step 4: Verify Installation
 
 ```bash
 # Check Python Version
@@ -61,6 +81,17 @@ python -c "from Core import Create_Torrent_From_Path; print('Core Module: OK')"
 ```
 
 ### Step 4: Initial Configuration
+
+#### Directory Paths
+The System Uses Absolute Paths Based On Project Root:
+- `Storage/Uploads/` - Original Files Uploaded Via Web Interface
+- `Storage/Torrents/` - .dst Torrent Files And File Copies For Seeding
+- `Storage/Temp/` - Temporary Files During Processing
+- `Downloads/` - Final Destination For Downloaded Files
+- `Data/` - SQLite Database Location
+- `Logs/` - Application Logs
+
+These Paths Are Configurable Via The Web Interface Settings Panel.
 
 #### Environment Variables (Optional)
 Create A `.env` File In The Project Root:
@@ -94,14 +125,29 @@ The System Uses Configuration Files Located In The `Config/` Directory:
 # Basic Startup
 python Main_Server.py
 
+# Server Starts On http://localhost:5043
+# Web Interface Available At http://localhost:5043
+
 # With Custom Port
 SERVER_PORT=8080 python Main_Server.py
 
 # With Debug Logging
 DEBUG_MODE=true python Main_Server.py
+
+# Or Use Batch File (Windows)
+Launch_Frontend.bat
 ```
 
-### Create Your First Torrent
+### Using The Web Interface (Recommended)
+
+1. **Start Server**: Run `python Main_Server.py` Or `Launch_Frontend.bat`
+2. **Open Browser**: Navigate To `http://localhost:5043`
+3. **Upload File**: Click "Upload File" Button, Select File
+4. **Auto-Seeding**: System Automatically Starts Seeding After Upload
+5. **Download**: Click On A Torrent, Then Click "Download" Button
+6. **Localhost Optimization**: If File Available Locally, Download Is Instant
+
+### Create Your First Torrent (CLI)
 
 ```bash
 # Create A Sample Torrent For Testing
@@ -114,7 +160,7 @@ python Main_Client.py create --input /path/to/your/file.txt --output my_torrent.
 python Main_Client.py create --input /path/to/directory --output my_directory_torrent.dst --tracker http://localhost:5043/announce
 ```
 
-### Test Download And Seeding
+### Test Download And Seeding (CLI)
 
 ```bash
 # In Terminal 1: Start Seeding
@@ -122,6 +168,9 @@ python Main_Client.py seed --torrent test_torrent.dst
 
 # In Terminal 2: Download The Torrent
 python Main_Client.py download --torrent test_torrent.dst --output Downloads/
+
+# Note: With Localhost Optimization, If Files Exist In Storage/Torrents/,
+# They Are Copied Directly To Downloads/ For Instant Transfer
 ```
 
 ## Advanced Setup

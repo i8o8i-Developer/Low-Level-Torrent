@@ -24,6 +24,61 @@ DST Torrent Is Built As A Modular, Production-Grade P2P File Sharing System With
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+## Storage Architecture
+
+### Directory Structure
+
+```
+Storage/
+├── Uploads/         # Original Uploaded Files
+│   └── [filename]   # User Uploads Via Web Interface
+├── Torrents/        # .dst Torrent Files And Seeding Copies
+│   ├── [hash].dst   # Torrent Metadata Files
+│   └── [filename]   # File Copies For Seeding
+└── Temp/            # Temporary Processing Files
+    └── [temp_files] # Download In Progress, Partial Files
+
+Downloads/           # Completed Downloaded Files
+    └── [filename]   # Final Destination For Downloads
+
+Data/                # SQLite Database Files
+    └── Torrent_System.db
+
+Logs/                # Application Log Files
+    ├── Server.log
+    └── Client.log
+
+Crypto/
+├── Keys/            # RSA Public/Private Keys
+│   ├── Private_Key.pem
+│   └── Public_Key.pem
+└── Certificates/    # SSL/TLS Certificates
+```
+
+### Storage Management Features
+
+#### Localhost Optimization
+When Both Uploader And Downloader Are On Same Machine:
+1. **Detection Phase**: Client Checks `Storage/Torrents/` For File Copies
+2. **Verification**: Compares File Hashes Against Torrent Metadata
+3. **Instant Copy**: If Valid, Uses `shutil.copy2()` For Direct Copy
+4. **Destination**: Files Copied To `Downloads/` Folder
+5. **Fallback**: If Not Found Or Invalid, Falls Back To P2P Download
+
+#### Auto-Seeding Workflow
+After Upload Via Web Interface:
+1. **Save Original**: File Saved To `Storage/Uploads/[filename]`
+2. **Create Torrent**: .dst File Created In `Storage/Torrents/[hash].dst`
+3. **Copy For Seeding**: Original File Copied To `Storage/Torrents/[filename]`
+4. **Background Process**: Seeding Process Starts Automatically Using `subprocess.Popen`
+5. **Database Update**: Torrent Record Updated With Seeding Status
+
+#### Path Management
+- **Absolute Paths**: All File Operations Use Absolute Paths From Project Root
+- **Cross-Platform**: Works On Windows, Linux, MacOS
+- **Configuration**: Paths Configurable Via Settings And Environment Variables
+- **Validation**: Path Existence Verified Before Operations
+
 ## Core Components
 
 ### 1. Application Layer
@@ -187,25 +242,82 @@ DST Torrent Is Built As A Modular, Production-Grade P2P File Sharing System With
 
 ## Data Flow Architecture
 
-### Torrent Creation Flow
+### Upload And Auto-Seeding Flow
 
 ```
-File/Directory Input
+User Upload (Web UI)
         │
         ▼
-Torrent Metadata Creation
+Save To Storage/Uploads/
         │
         ▼
-Piece Hash Calculation
+Create Torrent Metadata
+        │
+        ▼
+Calculate Piece Hashes
         │
         ▼
 Metadata Encryption (RSA)
         │
         ▼
-DST File Output (.dst)
+Save DST File To Storage/Torrents/
+        │
+        ▼
+Copy Original To Storage/Torrents/ For Seeding
+        │
+        ▼
+Start Auto-Seeding Process (Background)
+        │
+        ▼
+Update Database With Seeding Status
 ```
 
-### Download Flow
+### Localhost Optimized Download Flow
+
+```
+DST File Loading
+        │
+        ▼
+Parse Torrent Metadata
+        │
+        ▼
+Check Storage/Torrents/ For Local Copy
+        │
+        ├─────► Found Locally?
+        │       │
+        │       ├─ YES → Verify Hash
+        │       │        │
+        │       │        ▼
+        │       │     Copy To Downloads/ (Instant)
+        │       │        │
+        │       │        ▼
+        │       │     Download Complete
+        │       │
+        │       └─ NO → Continue Below
+        │
+        ▼
+Tracker Announcement
+        │
+        ▼
+Peer List Retrieval
+        │
+        ▼
+Peer Connections Establishment
+        │
+        ▼
+Piece Requests (Rarest-First)
+        │
+        ▼
+Block Downloads (16KB)
+        │
+        ▼
+Piece Verification (SHA-1)
+        │
+        ▼
+File Assembly In Downloads/
+```
+
+### Standard Download Flow (P2P)
 
 ```
 DST File Loading

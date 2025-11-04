@@ -35,9 +35,13 @@ class DST_Client:
         # BitTorrent Protocol Instance
         self.bt_protocol = None
 
-        # Generate Peer ID
+        # Generate Peer ID (Must Be Exactly 20 Bytes)
         import random
-        self.Peer_ID = f"-DST{random.randint(10000, 99999)}-"
+        peer_id_base = f"-DST{random.randint(10000, 99999)}-"
+        # Pad to 20 characters with random digits
+        padding_length = 20 - len(peer_id_base)
+        padding = ''.join(str(random.randint(0, 9)) for _ in range(padding_length))
+        self.Peer_ID = peer_id_base + padding
 
         logger.info("DST Client Initialized")
     
@@ -132,6 +136,7 @@ class DST_Client:
         import asyncio
         import time
         import requests
+        import shutil
         from concurrent.futures import ThreadPoolExecutor
         
         try:
@@ -148,13 +153,44 @@ class DST_Client:
             print(f"📊 Total Size: {Format_Bytes(Metadata.Get_Total_Size())}")
             print(f"🧩 Pieces: {Metadata.Get_Piece_Count()}")
             
+            # LOCALHOST OPTIMIZATION: Check If File Exists Locally In Storage/Torrents
+            Project_Root = Path(__file__).parent
+            Storage_Torrents = Project_Root / 'Storage' / 'Torrents'
+            
+            local_files_found = True
+            for file_info in Metadata.Files:
+                local_file_path = Storage_Torrents / file_info.Path
+                if not local_file_path.exists():
+                    local_files_found = False
+                    break
+            
+            if local_files_found:
+                print("🚀 Localhost Optimization: Files Found Locally, Copying Directly...")
+                try:
+                    for file_info in Metadata.Files:
+                        source_file = Storage_Torrents / file_info.Path
+                        dest_file = Output_Path / file_info.Path
+                        
+                        dest_file.parent.mkdir(parents=True, exist_ok=True)
+                        
+                        # Copy file
+                        shutil.copy2(str(source_file), str(dest_file))
+                        print(f"✅ Copied: {file_info.Path} ({Format_Bytes(file_info.Length)})")
+                        logger.info(f"Localhost Copy: {source_file} -> {dest_file}")
+                    
+                    print(f"\n✅ Download Completed Successfully (Localhost Copy)!")
+                    print(f"📁 Files Saved To: {Output_Path}")
+                    return Metadata
+                except Exception as copy_error:
+                    logger.warning(f"Localhost Copy Failed, Falling Back To P2P: {copy_error}")
+            
             # Initialize BitTorrent Protocol
             from Peer.BitTorrent_Protocol import BitTorrent_Protocol
             bt_protocol = BitTorrent_Protocol(Metadata, self.Peer_ID)
             bt_protocol.set_download_directory(str(Output_Path))
             
             # Get Peers From Tracker
-            peers = self._get_peers_from_tracker(Metadata)
+            peers = self._get_peers_from_tracker(Metadata, port=6883)
             if not peers:
                 print("❌ No Peers Found. Torrent May Not Be Available.")
                 return None
@@ -235,18 +271,23 @@ class DST_Client:
             print(f"❌ Error: {E}")
             sys.exit(1)
     
-    def _get_peers_from_tracker(self, Metadata):
+    def _get_peers_from_tracker(self, Metadata, left=None, event='started', port=6881):
         """
         Get Peer List From Tracker
         
         Args:
             Metadata: Torrent Metadata
+            left: Bytes left to download (None for auto)
+            event: Event type
             
         Returns:
             List Of (IP, Port) Tuples
         """
         import requests
         from Peer.P2P_Communication import Compact_Peer_List
+        
+        if left is None:
+            left = Metadata.Get_Total_Size()
         
         peers = []
         
@@ -258,12 +299,12 @@ class DST_Client:
                 params = {
                     'info_hash': Metadata.Info_Hash,
                     'peer_id': self.Peer_ID,
-                    'port': 6881,
+                    'port': port,
                     'uploaded': 0,
                     'downloaded': 0,
-                    'left': Metadata.Get_Total_Size(),
+                    'left': left,
                     'compact': 1,
-                    'event': 'started'
+                    'event': event
                 }
                 
                 response = requests.get(tracker_url, params=params, timeout=10)
@@ -353,7 +394,7 @@ class DST_Client:
         
         return output_path
     
-    def Seed_Torrent(self, Torrent_Path: str, Port: int = 6881):
+    def Seed_Torrent(self, Torrent_Path: str, Port: int = 6882):
         """
         Seed Torrent With Full P2P Implementation
         
@@ -397,6 +438,13 @@ class DST_Client:
                         return
                     
                     print(f"✅ Loaded {len(bt_protocol.have_pieces)}/{bt_protocol.total_pieces} Pieces")
+                    
+                    # Announce To Tracker
+                    try:
+                        announce_peers = self._get_peers_from_tracker(Metadata, left=0, event='started', port=Port)
+                        logger.info(f"Announced To Tracker, Found {len(announce_peers)} Peers")
+                    except Exception as e:
+                        logger.warning(f"Failed To Announce To Tracker: {e}")
                     
                     # Start Seeding Server
                     seeding_task = asyncio.create_task(bt_protocol.start_seeding_server(Port))

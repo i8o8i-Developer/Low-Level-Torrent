@@ -1,5 +1,3 @@
-# DST Torrent - Production-Grade P2P File Sharing System
-
 ```
  ██████╗ ███████╗████████╗    ████████╗ ██████╗ ██████╗ ██████╗ ███████╗███╗   ██╗████████╗
  ██╔══██╗██╔════╝╚══██╔══╝    ╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝████╗  ██║╚══██╔══╝
@@ -22,13 +20,17 @@ DST Torrent Is A Comprehensive, Enterprise-Ready Peer-To-Peer File Sharing Platf
 ║  ⛓️  BLOCKCHAIN INTEGRATION: Decentralized Peer Discovery With Proof-Of-Work Mining         ║
 ║  🚀 PRODUCTION READY: Health Monitoring, Metrics, Graceful Shutdown, Thread-Safe Ops        ║
 ║  📡 FULL P2P PROTOCOL: Complete BitTorrent Implementation With Advanced Features            ║
-║  🛡️  ANTI-DETECTION: DPI Evasion, Traffic Obfuscation, Steganography                        ║
+║  ⚡ LOCALHOST OPTIMIZATION : Instant File Transfer When Source And Destination On Same PC   ║
+║  🛡️ ANTI-DETECTION: DPI Evasion, Traffic Obfuscation, Steganography                         ║
 ║  🔒 PRIVACY FIRST: Zero-Knowledge Proofs, Self-Destructing Torrents                         ║
 ║  📊 REAL-TIME MONITORING: Progress Tracking, Bandwidth Management, ETA Calculation          ║
 ║  🌐 ENTERPRISE GRADE: Suitable For Secure File Distribution, Research Collaboration         ║
+║  📁 AUTO-SEEDING : Automatic Seeding Starts After Upload Completion                         ║
 ║                                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════╝
 ```
+
+![DST Torrent Dashboard](Assets/Dashboard.png)
 
 ## Key Features
 
@@ -54,10 +56,27 @@ DST Torrent Is A Comprehensive, Enterprise-Ready Peer-To-Peer File Sharing Platf
 - **Thread-Safe Operations** With Proper Locking
 - **Comprehensive Error Handling** And Logging
 
+### ⚡ Localhost Optimization
+- **Instant File Transfer** When Source And Destination Are On Same Machine
+- **Automatic Detection** Of Local Files In Storage/Torrents Directory
+- **Bypasses P2P Protocol** For Zero Network Latency
+- **Direct File Copy** Using Operating System Primitives
+- **Fallback To P2P** If Files Not Available Locally
+
+### 📁 Smart Storage Management
+- **Storage/Uploads/** - Original Uploaded Files
+- **Storage/Torrents/** - .dst Torrent Files And Seeding Copies
+- **Storage/Temp/** - Temporary Processing Files
+- **Downloads/** - Downloaded Files (Completed Torrents)
+- **Auto-Seeding** - Automatic Seeding After Upload
+- **Absolute Path Support** - Works On Any System File Path
+
 ### 🌐 Web Interface Enhancements
 - **Modal Popup System** For Interactive Torrent And Peer Details
 - **Dead Drop Anonymous File Sharing** With Self-Destructing Files
 - **Real-Time Dashboard** With Live Statistics And Activity Logs
+- **Configurable Auto-Refresh** For Dashboard Updates
+- **Directory Path Configuration** In Settings
 
 ## System Architecture
 
@@ -85,6 +104,21 @@ DST Torrent System Architecture
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘         │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
+
+Directory Structure
+═══════════════════════════════════════════════════════════════════════════════
+
+Storage/
+├── Uploads/         # Original Uploaded Files
+├── Torrents/        # .dst Files And Seeding Copies
+└── Temp/            # Temporary Processing Files
+
+Downloads/           # Completed Downloaded Files
+Data/                # SQLite Database Files
+Logs/                # Application Log Files
+Crypto/
+├── Keys/            # RSA Public/Private Keys
+└── Certificates/    # SSL/TLS Certificates
 ```
 
 ## Quick Start Guide
@@ -101,6 +135,9 @@ cd Low-Level-Torrent
 
 # Install Dependencies
 pip install -r Requirements.txt
+
+# Or Use Automated Setup (Windows)
+Setup.bat
 ```
 
 ### Basic Usage
@@ -108,19 +145,47 @@ pip install -r Requirements.txt
 #### 1. Start The Tracker Server
 ```bash
 python Main_Server.py
+# Server Will Run On http://localhost:5043
 ```
 
-#### 2. Create A Sample Torrent
+#### 2. Access Web Interface
+```bash
+# Open Browser And Navigate To
+http://localhost:5043
+
+# Or Use Batch File (Windows)
+Launch_Frontend.bat
+```
+
+#### 3. Upload A File Via Web Interface
+- Click "Upload File" Button
+- Select File From Your System
+- File Is Saved To Storage/Uploads/
+- Torrent Is Created In Storage/Torrents/
+- Auto-Seeding Starts Automatically
+
+#### 4. Download A Torrent
+- Click On A Torrent In The Dashboard
+- Click "Download" Button
+- With Localhost Optimization:
+  - If File Exists In Storage/Torrents/, It's Copied Instantly
+  - Downloaded File Appears In Downloads/ Folder
+- Without Local Copy:
+  - P2P Download Starts
+  - Connects To Available Seeders
+  - Downloads And Verifies Pieces
+
+#### 5. CLI Alternative - Create A Sample Torrent
 ```bash
 python Main_Client.py sample --output My_Sample.dst
 ```
 
-#### 3. Download The Torrent
+#### 6. CLI Alternative - Download The Torrent
 ```bash
 python Main_Client.py download --torrent My_Sample.dst --output Downloads/
 ```
 
-#### 4. Seed The Torrent
+#### 7. CLI Alternative - Seed The Torrent
 ```bash
 python Main_Client.py seed --torrent My_Sample.dst
 ```
@@ -289,6 +354,8 @@ No Blockchain Integration            │  Full Blockchain Peer Discovery
 6. **Research Focused**: Designed For Academic And Scientific Collaboration
 7. **Open Source**: Transparent, Auditable, And Community-Driven Development
 8. **Scalable**: Handles Large Files And High-Concurrency Scenarios
+9. **Localhost Optimization**: Instant File Transfer For Same-Machine Operations
+10. **Auto-Seeding**: Automatic Seeding After Upload For Maximum Availability
 
 ## Development Roadmap
 
@@ -303,6 +370,10 @@ No Blockchain Integration            │  Full Blockchain Peer Discovery
 - Progress Tracking And Statistics
 - Web-Based GUI Interface With Modal Popups
 - Dead Drop Anonymous File Sharing System
+- Localhost Optimization For Instant Transfers
+- Auto-Seeding After Upload
+- Absolute Path Support For Cross-Platform Compatibility
+- Enhanced Logging And Debugging
 
 ### 🔄 In Development
 - Mobile Client Applications
@@ -378,20 +449,34 @@ export BLOCKCHAIN_NETWORK=TestNet
 
 ## P2P Protocol Features
 
-### Download Process
+### Localhost Optimization (New Feature)
+When Both Uploader And Downloader Are On The Same Machine:
+1. **Detection**: Client Checks Storage/Torrents/ For Local File Copies
+2. **Instant Copy**: If Found, Files Are Copied Directly To Downloads/ Using `shutil.copy2()`
+3. **Zero Latency**: Bypasses Network Stack And P2P Protocol Entirely
+4. **Automatic Fallback**: If Not Found Locally, Falls Back To Standard P2P Download
+
+### Standard P2P Download Process
 1. **Peer Discovery**: Contact Tracker To Get Peer List
 2. **Connection Management**: Connect To Multiple Peers With Retry Logic
 3. **Handshake**: Perform BitTorrent Protocol Handshake
 4. **Piece Selection**: Use Rarest-First Algorithm For Optimal Performance
 5. **Block Requests**: Request 16KB Blocks From Peers
 6. **Verification**: Verify Piece Hashes Against Torrent Metadata
-7. **File Assembly**: Write Completed Pieces To Files
+7. **File Assembly**: Write Completed Pieces To Files In Downloads/
 
 ### Seeding Process
 1. **Load Existing Pieces**: Verify Local Files Against Torrent
 2. **Start Server**: Listen For Incoming Peer Connections
 3. **Serve Pieces**: Respond To Piece Requests From Downloaders
 4. **Tracker Updates**: Periodically Announce To Tracker
+
+### Auto-Seeding After Upload
+1. **Upload Complete**: File Saved To Storage/Uploads/
+2. **Torrent Creation**: .dst File Created In Storage/Torrents/
+3. **File Copy**: Original File Copied To Storage/Torrents/ For Seeding
+4. **Auto-Start Seeding**: Seeding Process Starts Automatically In Background
+5. **Database Update**: Torrent Record Updated With Seeding Status
 
 ### Advanced Features
 - **Connection Limits**: Maximum 10 Concurrent Peer Connections
