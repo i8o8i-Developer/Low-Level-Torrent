@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DST TORRENT - DIGITAL SHARING SYSTEM</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/Retro.css') }}">
+</head>
+<body>
+    <!-- CRT EFFECT OVERLAYS -->
+    <div class="scanlines"></div>
+    <div class="crt-effect"></div>
+
+    <!-- NOTIFICATION CONTAINER -->
+    <div class="notification-container" id="Notification_Container"></div>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="logo">
+                <div class="pixel-text">DST TORRENT</div>
+                <div class="subtitle">DIGITAL SHARING SYSTEM</div>
+            </div>
+            <div class="auth-controls">
+                <div class="user-info" id="User_Info">
+                    <span class="user-name">SYSTEM ONLINE</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- NAVIGATION TABS -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="Dashboard_Tab">DASHBOARD</button>
+            <button class="tab-btn" data-tab="Torrents_Tab">TORRENTS</button>
+            <button class="tab-btn" data-tab="Upload_Tab">UPLOAD</button>
+            <button class="tab-btn" data-tab="Download_Tab">DOWNLOAD</button>
+            <button class="tab-btn" data-tab="DeadDrop_Tab">DEAD DROP</button>
+            <button class="tab-btn" data-tab="Peers_Tab">PEERS</button>
+            <button class="tab-btn" data-tab="Blockchain_Tab">BLOCKCHAIN</button>
+            <button class="tab-btn" data-tab="System_Tab">SYSTEM</button>
+        </nav>
+
+        <!-- DASHBOARD TAB -->
+        <div class="tab-content active" id="Dashboard_Tab">
+            <div class="panel">
+                <h2 class="panel-title">SYSTEM STATISTICS</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">TOTAL TORRENTS</div>
+                        <div class="stat-value" id="Total_Torrents">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">ACTIVE PEERS</div>
+                        <div class="stat-value" id="Active_Peers">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">TOTAL UPLOADS</div>
+                        <div class="stat-value" id="Total_Uploads">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">TOTAL DOWNLOADS</div>
+                        <div class="stat-value" id="Total_Downloads">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">DATA SHARED</div>
+                        <div class="stat-value" id="Data_Shared">0 GB</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">SYSTEM UPTIME</div>
+                        <div class="stat-value" id="System_Uptime">00:00:00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">RECENT ACTIVITY LOG</h2>
+                <div class="activity-log" id="Activity_Log">
+                    <div class="log-entry">SYSTEM INITIALIZED</div>
+                    <div class="log-entry">TRACKER API STARTED</div>
+                    <div class="log-entry">PEER DISCOVERY ENABLED</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TORRENTS TAB -->
+        <div class="tab-content" id="Torrents_Tab">
+            <div class="panel">
+                <h2 class="panel-title">TORRENT MANAGEMENT</h2>
+                <div class="wallet-controls">
+                    <button class="btn btn-primary" data-action="Refresh_Torrents">REFRESH LIST</button>
+                    <button class="btn btn-success" data-action="Download_Torrent">DOWNLOAD BY HASH</button>
+                </div>
+
+                <div class="panel-note">
+                    <h3 class="panel-note-title">DOWNLOAD INFORMATION</h3>
+                    <small class="muted-small">
+                        • <strong>DOWNLOAD BUTTON:</strong> Downloads The .dst Torrent Metadata File<br>
+                        • <strong>SEED BUTTON:</strong> Starts Seeding Downloaded Content To Other Peers<br>
+                        • <strong>USE A TORRENT CLIENT:</strong> Open The .dst File In A Torrent Client To Download Actual Files<br>
+                        • Torrent Files Will Be Downloaded To: <span id="Download_Info_Dir_Display">Downloads</span><br>
+                        • .dst Metadata Files Will Be Saved To: <span id="Torrent_Download_Info_Dir">Torrents</span>
+                    </small>
+                </div>
+
+                <div class="wallet-list" id="Torrent_List">
+                    <div class="wallet-card">
+                        <div class="wallet-info">
+                            <div class="wallet-name">NO TORRENTS AVAILABLE</div>
+                            <div class="wallet-address">UPLOAD A FILE TO CREATE YOUR FIRST TORRENT</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UPLOAD TAB -->
+        <div class="tab-content" id="Upload_Tab">
+            <div class="panel">
+                <h2 class="panel-title">CREATE NEW TORRENT</h2>
+                <form class="form" id="Upload_Form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label class="form-label">FILE TO SHARE</label>
+                        <div class="custom-file-input">
+                            <input type="file" class="form-input hidden-file" id="File_Input" required>
+                            <button type="button" class="btn btn-secondary file-select-btn" data-action="triggerFile" data-target="File_Input">CHOOSE FILE</button>
+                            <span class="file-name" id="File_Input_Name">NO FILE CHOSEN</span>
+                        </div>
+                        <div class="panel-note mt-10" >
+                            <small class="muted-small">
+                                <strong>UPLOAD INFO:</strong><br>
+                                • Files Will Be Processed In: <span id="Upload_Info_Dir">Uploads</span><br>
+                                • Temporary Files Stored In: <span id="Temp_Info_Dir">Temp</span><br>
+                                • Torrent Files Saved To: <span id="Torrent_Info_Dir">Torrents</span>
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">TORRENT NAME</label>
+                        <input type="text" class="form-input" id="Torrent_Name" placeholder="ENTER TORRENT NAME" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">DESCRIPTION</label>
+                        <textarea class="form-input" id="Description" placeholder="ENTER TORRENT DESCRIPTION" rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">TRACKER URL</label>
+                        <input type="text" class="form-input" id="Tracker_URL" value="http://localhost:5043/announce" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">PIECE SIZE</label>
+                        <select class="form-input" id="Piece_Size">
+                            <option value="262144">256 KB (RECOMMENDED)</option>
+                            <option value="524288">512 KB</option>
+                            <option value="1048576">1 MB</option>
+                            <option value="2097152">2 MB</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">ENABLE ENCRYPTION</label>
+                        <select class="form-input" id="Enable_Encryption">
+                            <option value="true">YES (RECOMMENDED)</option>
+                            <option value="false">NO</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-block">CREATE TORRENT</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">UPLOAD PROGRESS</h2>
+                <div id="Upload_Progress" class="activity-log">
+                    <div class="log-entry">WAITING FOR FILE UPLOAD...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DOWNLOAD TAB -->
+        <div class="tab-content" id="Download_Tab">
+            <div class="panel">
+                <h2 class="panel-title">DOWNLOAD TORRENTS</h2>
+                <form class="form" id="Download_Form">
+                    <div class="form-group">
+                        <label class="form-label">DST TORRENT FILE</label>
+                        <div class="custom-file-input">
+                            <input type="file" class="form-input hidden-file" id="Download_DST_File" accept=".dst" required>
+                            <button type="button" class="btn btn-secondary file-select-btn" data-action="triggerFile" data-target="Download_DST_File">CHOOSE .DST FILE</button>
+                            <span class="file-name" id="Download_DST_File_Name">NO FILE CHOSEN</span>
+                        </div>
+                        <div class="panel-note mt-10">
+                            <small class="muted-small">
+                                <strong>DOWNLOAD INFO:</strong><br>
+                                • Select A .dst Torrent Metadata File To Download<br>
+                                • Files Will Be Downloaded To: <span id="Download_Directory_Display">Downloads</span><br>
+                                • Progress Will Be Shown In Real-Time Below
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">DOWNLOAD DIRECTORY</label>
+                        <input type="text" class="form-input" id="Download_Directory_Input" placeholder="Leave empty for default Downloads folder">
+                        <small class="muted-small">Optional : Custom Download Directory Path</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-block">START DOWNLOAD</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">DOWNLOAD PROGRESS</h2>
+                <div class="download-controls">
+                    <button class="btn btn-danger" data-action="Stop_All_Downloads" id="Stop_Download_Btn" style="display: none;">STOP ALL DOWNLOADS</button>
+                </div>
+                <div class="activity-log" id="Download_Progress_Log">
+                    <div class="log-entry">WAITING FOR DOWNLOAD TO START...</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">ACTIVE DOWNLOADS</h2>
+                <div class="download-controls">
+                    <button class="btn btn-primary" data-action="Refresh_Downloads">REFRESH STATUS</button>
+                </div>
+                <div class="wallet-list" id="Active_Downloads_List">
+                    <div class="wallet-card">
+                        <div class="wallet-info">
+                            <div class="wallet-name">NO ACTIVE DOWNLOADS</div>
+                            <div class="wallet-address">START A DOWNLOAD TO SEE IT HERE</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEAD DROP TAB -->
+        <div class="tab-content" id="DeadDrop_Tab">
+            <div class="panel">
+                <h2 class="panel-title">ANONYMOUS DEAD DROP SYSTEM</h2>
+                <div class="section-title">WHAT IS DEAD DROP?</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">PURPOSE</span>
+                        <span class="info-value">ANONYMOUS FILE SHARING WITHOUT TRACKER</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">SECURITY</span>
+                        <span class="info-value">END-TO-END ENCRYPTED + SELF-DESTRUCTING</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">EXPIRATION</span>
+                        <span class="info-value">AUTO-DELETE AFTER CONFIGURED TIME</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">CREATE DEAD DROP</h2>
+                <form class="form" id="DeadDrop_Form">
+                    <div class="form-group">
+                        <label class="form-label">FILE TO DROP</label>
+                        <div class="custom-file-input">
+                            <input type="file" class="form-input hidden-file" id="DeadDrop_File" required>
+                            <button type="button" class="btn btn-secondary file-select-btn" data-action="triggerFile" data-target="DeadDrop_File">CHOOSE FILE</button>
+                            <span class="file-name" id="DeadDrop_File_Name">NO FILE CHOSEN</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">DROP NAME (OPTIONAL)</label>
+                        <input type="text" class="form-input" id="DeadDrop_Name" placeholder="LEAVE BLANK FOR ANONYMOUS">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">ENCRYPTION PASSWORD</label>
+                        <input type="password" class="form-input" id="DeadDrop_Password" placeholder="ENTER STRONG PASSWORD" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">EXPIRATION TIME</label>
+                        <select class="form-input" id="DeadDrop_Expiration">
+                            <option value="1">1 HOUR</option>
+                            <option value="6">6 HOURS</option>
+                            <option value="24" selected>24 HOURS</option>
+                            <option value="48">48 HOURS</option>
+                            <option value="168">7 DAYS</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">MAX DOWNLOADS</label>
+                        <select class="form-input" id="DeadDrop_MaxDownloads">
+                            <option value="1" selected>1 DOWNLOAD (SINGLE USE)</option>
+                            <option value="5">5 DOWNLOADS</option>
+                            <option value="10">10 DOWNLOADS</option>
+                            <option value="50">50 DOWNLOADS</option>
+                            <option value="0">UNLIMITED</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-block">CREATE DEAD DROP</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">ACCESS DEAD DROP</h2>
+                <form class="form" id="DeadDrop_Access_Form">
+                    <div class="form-group">
+                        <label class="form-label">DROP ID</label>
+                        <input type="text" class="form-input" id="DeadDrop_ID" placeholder="ENTER DEAD DROP ID" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">DECRYPTION PASSWORD</label>
+                        <input type="password" class="form-input" id="DeadDrop_Access_Password" placeholder="ENTER PASSWORD" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">ACCESS DEAD DROP</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">ACTIVE DEAD DROPS</h2>
+                <div class="wallet-controls">
+                    <button class="btn btn-secondary" data-action="Refresh_DeadDrops">REFRESH LIST</button>
+                </div>
+                <div class="wallet-list" id="DeadDrop_List">
+                    <div class="wallet-card">
+                        <div class="wallet-info">
+                            <div class="wallet-name">NO ACTIVE DEAD DROPS</div>
+                            <div class="wallet-address">CREATE A DEAD DROP TO SEE IT HERE</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PEERS TAB -->
+        <div class="tab-content" id="Peers_Tab">
+            <div class="panel">
+                <h2 class="panel-title">PEER NETWORK</h2>
+                <div class="network-controls">
+                    <button class="btn btn-primary" data-action="Refresh_Peers">REFRESH PEERS</button>
+                    <button class="btn btn-secondary" data-action="Discover_Peers">DISCOVER PEERS</button>
+                </div>
+
+                <div class="peer-list" id="Peer_List">
+                    <div class="peer-item">
+                        <span class="peer-url">NO PEERS CONNECTED</span>
+                        <span class="peer-status dead">OFFLINE</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">PEER STATISTICS</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">CONNECTED PEERS</div>
+                        <div class="stat-value" id="Connected_Peers">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">SEEDERS</div>
+                        <div class="stat-value" id="Total_Seeders">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">LEECHERS</div>
+                        <div class="stat-value" id="Total_Leechers">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">UPLOAD SPEED</div>
+                        <div class="stat-value" id="Upload_Speed">0 KB/S</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BLOCKCHAIN TAB -->
+        <div class="tab-content" id="Blockchain_Tab">
+            <div class="panel">
+                <h2 class="panel-title">BLOCKCHAIN TRACKER</h2>
+                <div class="consensus-controls">
+                    <button class="btn btn-primary" data-action="Refresh_Blockchain">REFRESH CHAIN</button>
+                    <button class="btn btn-warning" data-action="Mine_Block">MINE BLOCK</button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">CHAIN LENGTH</div>
+                        <div class="stat-value" id="Chain_Length">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">PENDING TRANSACTIONS</div>
+                        <div class="stat-value" id="Pending_Transactions">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">MINING DIFFICULTY</div>
+                        <div class="stat-value" id="Mining_Difficulty">4</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">LAST BLOCK TIME</div>
+                        <div class="stat-value" id="Last_Block_Time">N/A</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">BLOCKCHAIN BLOCKS</h2>
+                <div class="activity-log" id="Blockchain_Blocks">
+                    <div class="log-entry">LOADING BLOCKCHAIN DATA...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SYSTEM TAB -->
+        <div class="tab-content" id="System_Tab">
+            <div class="panel">
+                <h2 class="panel-title">SYSTEM HEALTH</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">CPU USAGE</div>
+                        <div class="stat-value" id="CPU_Usage">0%</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">MEMORY USAGE</div>
+                        <div class="stat-value" id="Memory_Usage">0%</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">DISK USAGE</div>
+                        <div class="stat-value" id="Disk_Usage">0%</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">NETWORK STATUS</div>
+                        <div class="stat-value" id="Network_Status">ONLINE</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">SYSTEM CONFIGURATION</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">SERVER HOST</span>
+                        <span class="info-value" id="Server_Host">0.0.0.0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">SERVER PORT</span>
+                        <span class="info-value" id="Server_Port">5043</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">ENCRYPTION</span>
+                        <span class="info-value" id="Encryption_Status">AES-256-GCM</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">QUANTUM RESISTANT</span>
+                        <span class="info-value" id="Quantum_Status">ENABLED</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">DATABASE</span>
+                        <span class="info-value" id="Database_Type">SQLITE</span>
+                    </div>
+                <h2 class="panel-title">DIRECTORY CONFIGURATION</h2>
+                <div class="form mb-20">
+                    <div class="form-group">
+                        <label class="form-label">DOWNLOAD DIRECTORY</label>
+                        <div class="form-row">
+                            <input type="text" class="form-input flex-grow" id="Download_Directory" placeholder="Downloads">
+                            <button class="btn btn-secondary" data-action="Save_Directory_Setting" data-target="Download_Directory">SAVE</button>
+                            <button class="btn btn-primary" data-action="Browse_Directory" data-target="Download_Directory">BROWSE</button>
+                        </div>
+                        <small class="muted-small">Where Downloaded Torrent Files Will Be Saved</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">UPLOAD DIRECTORY</label>
+                        <div class="form-row">
+                            <input type="text" class="form-input flex-grow" id="Upload_Directory" placeholder="Uploads">
+                            <button class="btn btn-secondary" data-action="Save_Directory_Setting" data-target="Upload_Directory">SAVE</button>
+                            <button class="btn btn-primary" data-action="Browse_Directory" data-target="Upload_Directory">BROWSE</button>
+                        </div>
+                        <small class="muted-small">Where Uploaded Files Are Temporarily Stored</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">TEMP DIRECTORY</label>
+                        <div class="form-row">
+                            <input type="text" class="form-input flex-grow" id="Temp_Directory" placeholder="Temp">
+                            <button class="btn btn-secondary" data-action="Save_Directory_Setting" data-target="Temp_Directory">SAVE</button>
+                            <button class="btn btn-primary" data-action="Browse_Directory" data-target="Temp_Directory">BROWSE</button>
+                        </div>
+                        <small class="muted-small">Directory For Temporary Files And Processing</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">TORRENT FILES DIRECTORY</label>
+                        <div class="form-row">
+                            <input type="text" class="form-input flex-grow" id="Torrent_Directory" placeholder="Torrents">
+                            <button class="btn btn-secondary" data-action="Save_Directory_Setting" data-target="Torrent_Directory">SAVE</button>
+                            <button class="btn btn-primary" data-action="Browse_Directory" data-target="Torrent_Directory">BROWSE</button>
+                        </div>
+                        <small class="muted-small">Where .dst Torrent Files Are Stored</small>
+                    </div>
+                </div>
+
+                <h2 class="panel-title">SYSTEM CONFIGURATION</h2>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">SYSTEM LOGS</h2>
+                <div class="activity-log" id="System_Logs">
+                    <div class="log-entry">SYSTEM OPERATIONAL</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-logo">DST TORRENT</div>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">GITHUB PROFILE</a>
+                    <a href="#" class="footer-link">PROJECT REPOSITORY</a>
+                    <a href="#" class="footer-link">REPORT ISSUES</a>
+                </div>
+                <div class="footer-info">
+                    A COMPLETE BLOCKCHAIN-BASED DIGITAL SHARING SYSTEM<br>
+                    WITH SMART CONTRACTS, MULTIPLE CONSENSUS ALGORITHMS, AND MODERN WEB INTERFACE
+                </div>
+                <div class="footer-copyright">
+                    &copy; 2025 DST TORRENT DIGITAL SHARING SYSTEM<br>
+                    DEVELOPED BY <a href="#" class="footer-github">I8O8I-DEVELOPER</a><br>
+                    OPEN SOURCE PROJECT - MIT LICENSE
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- MODAL POPUPS -->
+    
+    <!-- TORRENT DETAILS MODAL -->
+    <div class="modal hidden" id="Torrent_Details_Modal">
+        <div class="modal-content">
+            <span class="modal-close" data-action="Close_Modal" data-target="Torrent_Details_Modal">&times;</span>
+            <h2 class="modal-title">TORRENT DETAILS</h2>
+            
+            <div class="wallet-details-section">
+                <h3>BASIC INFORMATION</h3>
+                <div class="detail-row">
+                    <span class="detail-label">NAME:</span>
+                    <span class="detail-value" id="Modal_Torrent_Name">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">INFO HASH:</span>
+                    <span class="detail-value selectable" id="Modal_Torrent_Hash">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">SIZE:</span>
+                    <span class="detail-value" id="Modal_Torrent_Size">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">PIECE SIZE:</span>
+                    <span class="detail-value" id="Modal_Torrent_PieceSize">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">CREATED:</span>
+                    <span class="detail-value" id="Modal_Torrent_Created">-</span>
+                </div>
+            </div>
+
+            <div class="wallet-details-section">
+                <h3>NETWORK STATISTICS</h3>
+                <div class="detail-row">
+                    <span class="detail-label">SEEDERS:</span>
+                    <span class="detail-value" id="Modal_Torrent_Seeders">0</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">LEECHERS:</span>
+                    <span class="detail-value" id="Modal_Torrent_Leechers">0</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">TOTAL DOWNLOADS:</span>
+                    <span class="detail-value" id="Modal_Torrent_Downloads">0</span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-success" data-action="Download_Modal_Torrent">DOWNLOAD</button>
+                <button class="btn btn-secondary" data-action="Close_Modal" data-target="Torrent_Details_Modal">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEAD DROP SUCCESS MODAL -->
+    <div class="modal hidden" id="DeadDrop_Success_Modal">
+        <div class="modal-content">
+            <span class="modal-close" data-action="Close_Modal" data-target="DeadDrop_Success_Modal">&times;</span>
+            <h2 class="modal-title">DEAD DROP CREATED</h2>
+            
+            <div class="warning-box">
+                ⚠️ SAVE THIS INFORMATION! YOU WON'T BE ABLE TO RETRIEVE IT LATER!
+            </div>
+
+            <div class="wallet-details-section">
+                <h3>DROP INFORMATION</h3>
+                <div class="detail-row">
+                    <span class="detail-label">DROP ID:</span>
+                    <span class="detail-value selectable" id="Modal_Drop_ID">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">ACCESS URL:</span>
+                    <span class="detail-value selectable" id="Modal_Drop_URL">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">EXPIRES:</span>
+                    <span class="detail-value" id="Modal_Drop_Expires">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">MAX DOWNLOADS:</span>
+                    <span class="detail-value" id="Modal_Drop_MaxDownloads">-</span>
+                </div>
+            </div>
+
+            <div class="wallet-details-section">
+                <h3>SECURITY NOTES</h3>
+                <div class="detail-value">
+                    • FILE IS ENCRYPTED WITH YOUR PASSWORD<br>
+                    • DROP WILL AUTO-DELETE AFTER EXPIRATION<br>
+                    • NO LOGS ARE KEPT OF DOWNLOADS<br>
+                    • SHARE DROP ID AND PASSWORD SEPARATELY
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-success" data-action="Copy_Drop_ID">COPY DROP ID</button>
+                <button class="btn btn-warning" data-action="Copy_Drop_URL">COPY URL</button>
+                <button class="btn btn-secondary" data-action="Close_Modal" data-target="DeadDrop_Success_Modal">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PEER DETAILS MODAL -->
+    <div class="modal hidden" id="Peer_Details_Modal">
+        <div class="modal-content">
+            <span class="modal-close" data-action="Close_Modal" data-target="Peer_Details_Modal">&times;</span>
+            <h2 class="modal-title">PEER DETAILS</h2>
+            
+            <div class="wallet-details-section">
+                <h3>PEER INFORMATION</h3>
+                <div class="detail-row">
+                    <span class="detail-label">PEER ID:</span>
+                    <span class="detail-value selectable" id="Modal_Peer_ID">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">IP ADDRESS:</span>
+                    <span class="detail-value" id="Modal_Peer_IP">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">PORT:</span>
+                    <span class="detail-value" id="Modal_Peer_Port">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">STATUS:</span>
+                    <span class="detail-value" id="Modal_Peer_Status">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">TYPE:</span>
+                    <span class="detail-value" id="Modal_Peer_Type">-</span>
+                </div>
+            </div>
+
+            <div class="wallet-details-section">
+                <h3>STATISTICS</h3>
+                <div class="detail-row">
+                    <span class="detail-label">UPLOADED:</span>
+                    <span class="detail-value" id="Modal_Peer_Uploaded">0 B</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">DOWNLOADED:</span>
+                    <span class="detail-value" id="Modal_Peer_Downloaded">0 B</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">LAST SEEN:</span>
+                    <span class="detail-value" id="Modal_Peer_LastSeen">-</span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" data-action="Close_Modal" data-target="Peer_Details_Modal">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONFIRM ACTION MODAL -->
+    <div class="modal hidden" id="Confirm_Modal">
+        <div class="modal-content">
+            <span class="modal-close" data-action="Close_Modal" data-target="Confirm_Modal">&times;</span>
+            <h2 class="modal-title">CONFIRM ACTION</h2>
+            
+            <div class="wallet-details-section">
+                <div class="detail-value" id="Confirm_Message">
+                    ARE YOU SURE YOU WANT TO PROCEED?
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="Confirm_Yes_Btn" data-action="Confirm_Action">YES, PROCEED</button>
+                <button class="btn btn-secondary" data-action="Close_Modal" data-target="Confirm_Modal">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script src="{{ url_for('static', filename='JS/App.js') }}"></script>
+</body>
+</html>

@@ -8,6 +8,19 @@ DST Torrent Provides A Comprehensive Command-Line Interface For All Torrent Oper
 python Main_Client.py <command> [options]
 ```
 
+## Web Interface
+
+DST Torrent Provides A Web-Based User Interface For Enhanced Features Including:
+
+- **Modal Popups**: Interactive Torrent And Peer Details
+- **Dead Drop System**: Anonymous, Self-Destructing File Sharing
+- **Real-Time Dashboard**: Live Statistics And Activity Monitoring
+
+To Access The Web UI:
+1. Start The Server: `python Main_Server.py`
+2. Open Browser To: `http://localhost:5043`
+3. Use The Interface For Advanced Operations
+
 ## Core Commands
 
 ### Create Torrent

@@ -24,6 +24,7 @@ DST Torrent Is A Production-Grade, Secure, And Decentralized Peer-To-Peer File S
 - **Military-Grade Security**: AES-256-GCM, RSA-4096, Quantum-Resistant Cryptography
 - **Blockchain Integration**: Decentralized Peer Discovery And Immutable Tracking
 - **Anti-Detection**: DPI Evasion, Traffic Obfuscation, Steganography
+- **Web Interface**: Modal Popups For Interactive Details, Dead Drop Anonymous Sharing
 - **Production Ready**: Health Monitoring, Metrics, Graceful Shutdown
 - **Enterprise Scale**: Supports Files Up To 100TB With High Concurrency
 
@@ -33,9 +34,10 @@ In An Era Where Privacy And Security Are Paramount, DST Torrent Stands Out By Pr
 
 1. **Uncompromised Security**: Protection Against Current And Future Threats
 2. **Decentralized Architecture**: No Single Point Of Failure Or Control
-3. **Enterprise-Grade Reliability**: Production-Ready With Comprehensive Monitoring
-4. **Research-Focused Design**: Built For Academic And Scientific Collaboration
-5. **Future-Proof Technology**: Quantum-Resistant Cryptography And Blockchain Integration
+3. **User-Friendly Interface**: Web UI With Modal Popups And Dead Drop Sharing
+4. **Enterprise-Grade Reliability**: Production-Ready With Comprehensive Monitoring
+5. **Research-Focused Design**: Built For Academic And Scientific Collaboration
+6. **Future-Proof Technology**: Quantum-Resistant Cryptography And Blockchain Integration
 
 ---
 

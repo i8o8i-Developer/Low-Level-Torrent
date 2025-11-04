@@ -100,6 +100,69 @@ class Network_Config:
     Bandwidth_Limit_Upload = int(os.getenv('BANDWIDTH_LIMIT_UP', 0))
     Bandwidth_Limit_Download = int(os.getenv('BANDWIDTH_LIMIT_DOWN', 0))
     
+# Storage Configuration
+class Storage_Config:
+    """File Storage Settings"""
+    Base_Directory = BASE_DIR / os.getenv('STORAGE_BASE_DIR', 'Storage')
+    
+    # Torrent Files Storage
+    Torrents_Directory = Base_Directory / 'Torrents'
+    Temp_Directory = Base_Directory / 'Temp'
+    Uploads_Directory = Base_Directory / 'Uploads'
+    
+    # File Retention
+    Temp_File_Cleanup_Hours = int(os.getenv('TEMP_CLEANUP_HOURS', 24))
+    Max_Storage_Size_GB = int(os.getenv('MAX_STORAGE_SIZE_GB', 100))
+    
+    # File Permissions
+    Directory_Permissions = 0o755
+    File_Permissions = 0o644
+    
+# API Configuration
+class API_Config:
+    """API Settings"""
+    Version = os.getenv('API_VERSION', 'v1')
+    Rate_Limit_Requests = int(os.getenv('RATE_LIMIT_REQUESTS', 100))
+    Rate_Limit_Window = int(os.getenv('RATE_LIMIT_WINDOW', 60))  # Seconds
+    
+    # CORS Settings
+    CORS_Origins = os.getenv('CORS_ORIGINS', '*').split(',')
+    CORS_Methods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    CORS_Headers = ['Content-Type', 'Authorization', 'X-API-Key']
+    
+    # Security Headers
+    Security_Headers = {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'X-XSS-Protection': '1; mode=block',
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+        'Content-Security-Policy': "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:",
+        'Referrer-Policy': 'strict-origin-when-cross-origin'
+    }
+    
+# Monitoring Configuration
+class Monitoring_Config:
+    """Monitoring And Metrics Settings"""
+    Enable_Metrics = os.getenv('ENABLE_METRICS', 'True').lower() == 'true'
+    Metrics_Port = int(os.getenv('METRICS_PORT', 9090))
+    
+    # Health Check Settings
+    Health_Check_Interval = int(os.getenv('HEALTH_CHECK_INTERVAL', 30))
+    Health_Check_Timeout = int(os.getenv('HEALTH_CHECK_TIMEOUT', 10))
+    
+    # Logging
+    Log_Level = os.getenv('LOG_LEVEL', 'INFO')
+    Log_Format = os.getenv('LOG_FORMAT', 'json')
+    Log_Max_Size = os.getenv('LOG_MAX_SIZE', '10 MB')
+    Log_Retention = os.getenv('LOG_RETENTION', '30 days')
+    
+# Paths Configuration (Legacy Support)
+class Paths_Config:
+    """Legacy Path Configuration"""
+    Data_Directory = BASE_DIR / 'Data'
+    Logs_Directory = BASE_DIR / 'Logs'
+    Config_Directory = BASE_DIR / 'Config'
+    
     # Peer Configuration
     Max_Peers_Per_Torrent = 50
     Peer_Timeout = 120

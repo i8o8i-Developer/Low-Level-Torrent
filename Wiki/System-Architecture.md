@@ -54,6 +54,18 @@ DST Torrent Is Built As A Modular, Production-Grade P2P File Sharing System With
   - Seeding Operations
   - User Interaction Handling
 
+#### Web_UI/
+- **Purpose**: Web-Based User Interface
+- **Features**:
+  - Modal Popup System For Interactive Details
+  - Dead Drop Anonymous File Sharing
+  - Real-Time Dashboard And Monitoring
+  - RESTful API Integration
+- **Components**:
+  - `Index.html`: Main Interface Template
+  - `App.js`: Frontend Application Logic
+  - `Retro.css`: Styling And Themes
+
 ### 2. Core Layer
 
 #### Torrent_Metadata.py

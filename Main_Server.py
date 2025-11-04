@@ -10,6 +10,7 @@ import time
 import threading
 import argparse
 import psutil
+import platform
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional
@@ -89,7 +90,9 @@ class ServerManager:
                 # Component-Specific Health Checks
                 if name == 'Database':
                     # Check Database Connectivity
-                    component.engine.execute("SELECT 1")
+                    from sqlalchemy import text
+                    with component.Engine.connect() as conn:
+                        conn.execute(text("SELECT 1"))
                 elif name == 'Tracker':
                     # Check If Tracker API Is Responsive Via HTTP Health Endpoint
                     import requests
@@ -250,12 +253,13 @@ def setup_signal_handlers(server_manager: ServerManager):
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    # Handle SIGUSR1 For Health Status
-    def health_signal_handler(signum, frame):
-        health = server_manager.get_health_status()
-        logger.info(f"Health Status: {health['overall_status']} ({health['healthy_count']}/{health['total_count']} components healthy)")
+    # Handle SIGUSR1 For Health Status (Unix Only)
+    if platform.system() != 'Windows':
+        def health_signal_handler(signum, frame):
+            health = server_manager.get_health_status()
+            logger.info(f"Health Status: {health['overall_status']} ({health['healthy_count']}/{health['total_count']} Components Healthy)")
 
-    signal.signal(signal.SIGUSR1, health_signal_handler)
+        signal.signal(signal.SIGUSR1, health_signal_handler)
 
 
 def print_banner():

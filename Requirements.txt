@@ -3,6 +3,8 @@ Flask
 Flask-CORS
 Flask-SQLAlchemy
 SQLAlchemy
+Flask-Limiter
+flask-limiter[sqlalchemy]
 
 # Cryptography Libraries
 cryptography
@@ -46,3 +48,4 @@ psutil  # System Resource Monitoring
 
 # Security
 pyOpenSSL
+redis

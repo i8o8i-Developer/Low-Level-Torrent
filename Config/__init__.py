@@ -11,7 +11,10 @@ from .Settings import (
     Torrent_Config,
     Network_Config,
     Logging_Config,
-    Paths_Config
+    Paths_Config,
+    Storage_Config,
+    API_Config,
+    Monitoring_Config
 )
 
 __all__ = [
@@ -23,5 +26,8 @@ __all__ = [
     'Torrent_Config',
     'Network_Config',
     'Logging_Config',
-    'Paths_Config'
+    'Paths_Config',
+    'Storage_Config',
+    'API_Config',
+    'Monitoring_Config'
 ]
