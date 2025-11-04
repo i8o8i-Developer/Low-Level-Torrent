@@ -64,7 +64,7 @@ class Tracker_API:
             storage_uri="memory://",
             default_limits=[f"{API_Config.Rate_Limit_Requests} per {API_Config.Rate_Limit_Window} seconds"]
         )
-        print("✅ Rate Limiting Configured With Redis Storage (With Memory Fallback)")
+        logger.info("✅ Rate Limiting Configured With Memory Storage")
         
         CORS(self.App)
         

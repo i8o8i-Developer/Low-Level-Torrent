@@ -9,7 +9,6 @@ import signal
 import time
 import threading
 import argparse
-import psutil
 import platform
 from pathlib import Path
 from datetime import datetime

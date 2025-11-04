@@ -191,31 +191,6 @@ function Switch_Tab(Tab_ID) {
 }
 
 /**
- * START AUTO-REFRESH TIMER
- * DISABLED - Only Refresh When User Clicks Refresh Button
- */
-function Start_Auto_Refresh() {
-    // AUTO-REFRESH DISABLED - User must click refresh buttons
-    // Uncomment below to enable auto-refresh every 5 seconds
-    /*
-    Refresh_Interval = setInterval(() => {
-        Update_Uptime();
-        if (Current_Tab === 'Dashboard_Tab') {
-            Refresh_Dashboard();
-        } else if (Current_Tab === 'Download_Tab') {
-            Refresh_Downloads();
-        } else if (Current_Tab === 'Peers_Tab') {
-            Refresh_Peers();
-        } else if (Current_Tab === 'Blockchain_Tab') {
-            Refresh_Blockchain();
-        } else if (Current_Tab === 'System_Tab') {
-            Refresh_System();
-        }
-    }, 5000);
-    */
-}
-
-/**
  * UPDATE SYSTEM UPTIME
  */
 function Update_Uptime() {
